@@ -4,8 +4,12 @@
 
 ## Installation
 
+`bmbftnl` kann einfach mittels `pip` oder `pipx` installiert werden. Letzteres bietet sich für die einfache Verwendung auf der Kommandozeile an. Das Programm wurde lediglich unter Linux getestet, sollte allerdings auch unter Windows und MacOS funktionieren.
+
 ```bash
 pip install bmbftnl
+# oder
+pipx install bmbftnl
 ```
 
 ## Nutzung
