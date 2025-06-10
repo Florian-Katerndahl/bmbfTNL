@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "bmbftnl"
+version = "0.1.0"
+description = "Automatisches Ausfüllen von Teilnehmendenlisten des BMBF mit Namen, Standort und Studierendenstatus"
+license = "MIT
+authors = ["Florian Katerndahl <florian@katerndahl.com>"]
+repository = ""
+keywords = ["bmbf", "teilnehmende"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pypdf = "^5.6.0"
+tqdm = "^4.67.1"
+
+[tool.poetry.scripts]
+bmbftnl = "bmbftnl.console:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
