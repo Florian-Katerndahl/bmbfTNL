@@ -2,9 +2,9 @@
 name = "bmbftnl"
 version = "0.1.0"
 description = "Automatisches Ausfüllen von Teilnehmendenlisten des BMBF mit Namen, Standort und Studierendenstatus"
-license = "MIT
+license = "MIT"
 authors = ["Florian Katerndahl <florian@katerndahl.com>"]
-repository = ""
+repository = "https://github.com/Florian-Katerndahl/bmbfTNL"
 keywords = ["bmbf", "teilnehmende"]
 readme = "README.md"
 
