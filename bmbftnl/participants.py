@@ -1,6 +1,6 @@
 from csv import DictReader
 from datetime import date, timedelta
-from itertools import cycle, zip_longest, islice
+from itertools import cycle
 from pathlib import Path
 from math import ceil
 from typing import List, Dict, Tuple
@@ -30,10 +30,29 @@ class Teilnehmendenliste:
 
     @classmethod
     def enrolled_to_printable(cls, enrolled: str) -> str:
+        """
+        Convert enrollment status to suitable character representation for form filling
+
+        :param enrolled: Enrollment status
+        :type enrolled: str
+        :return: Aligned string to correctly fill field
+        :rtype: str
+        """
         return "  X" if enrolled.lower() == "ja" else "            X"
 
     @classmethod
     def read_participants(cls, participants: Path) -> List[Dict]:
+        """
+        Read participants, order them by location and replace csv
+        field names by form names
+
+        :param participants: File path to CSV file
+        :type participants: Path
+        :raises AssertionError: Field names not "name", "standort" and "eingeschrieben"
+        :raises AssertionError: Empty participant list gien
+        :return: List of participants dictionaries
+        :rtype: List[Dict]
+        """
         participant_list: List[Dict] = []
         with open(participants, encoding="utf-8") as csvfile:
             reader = DictReader(csvfile)
@@ -43,7 +62,7 @@ class Teilnehmendenliste:
                     "Column fields are expected to be name, standort and eingeschrieben"
                 )
 
-            participant_list = [participant for participant in reader]
+            participant_list = list(reader)
 
         # sort participants by location to make finding oneself in list easier
         participant_list.sort(key=itemgetter("standort", "name"))
@@ -77,6 +96,24 @@ class Teilnehmendenliste:
         template: Path,
         blank_pages: int = 1,
     ):
+        """
+        Constructor
+
+        :param title: Name of event
+        :type title: str
+        :param organization: Organization hosting event
+        :type organization: str
+        :param start_date: Start date (inclusive)
+        :type start_date: date
+        :param end_date: End date of event (inclusive)
+        :type end_date: date
+        :param participants: Path to CSV file with participants
+        :type participants: Path
+        :param template: Path to PDF template, must have fillable form fields
+        :type template: Path
+        :param blank_pages: Number of blank pages to append to each day, defaults to 1
+        :type blank_pages: int, optional
+        """
         self.title: str = title
         self.organization: str = organization
         self.start_date: date = start_date
@@ -88,6 +125,16 @@ class Teilnehmendenliste:
         self.blank_pages: int = blank_pages
 
     def form_header_fields(self, page_number: int, event_date: date) -> Dict[str, str]:
+        """
+        Generate general header information placed on every page
+
+        :param page_number: Page number
+        :type page_number: int
+        :param event_date: Date to print on page
+        :type event_date: date
+        :return: Mapped values to correct PDF form field IDs
+        :rtype: Dict[str, str]
+        """
         return {
             "1": page_number,
             "2": self.start_date.strftime(r"%d.")
@@ -99,6 +146,14 @@ class Teilnehmendenliste:
         }
 
     def generate_bmbf_list(self, output_directory: Path) -> None:
+        """
+        Generate BMBF attendence lists for every day of an event as seperate output files.
+        A file is genereated for every day, even if the specific day is not funded; there's
+        currently no mechanism to skip specific dates.
+
+        :param output_directory: Output directory to store all output files
+        :type output_directory: Path
+        """
         event_duration: timedelta = self.end_date - self.start_date
         num_pages_per_day: int = ceil(
             len(self.participants) / len(Teilnehmendenliste.pdf_form_mapping)
