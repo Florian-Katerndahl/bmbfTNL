@@ -64,6 +64,13 @@ class PDFExporter:
         self.blank_pages: int = blank_pages
     
     def import_participants(self, participants: CSVImporter) -> List[Dict]:
+        """Convert list of participants to a printable representation suitable to fill in form fields of PDF
+
+        :param participants: List of participants
+        :type participants: CSVImporter
+        :return: List of participants in printable format, i.e. as a dict of form field ids and their content
+        :rtype: List[Dict]
+        """
         printable_participants: List[Dict] = []
 
         for idx, (participant, form_ids) in enumerate(zip(participants.participants, cycle(PDFExporter.pdf_form_mapping))):

@@ -6,6 +6,14 @@ from operator import attrgetter
 from bmbftnl.participant import Participant
 
 def convert_enrollment_to_bool(status: str) -> bool:
+    """Convert string representation of enrollment status to boolean
+
+    :param status: string representation of enrollment status
+    :type status: str
+    :raises ValueError: Detection was not successful
+    :return: True if enrolled, False otherwise
+    :rtype: bool
+    """
     if status.lower() in ["j", "ja", "y", "yes", "true", "t", "1"]:
         return True
     if status.lower() in ["n", "nein", "no", "false", "f", "0"]:
@@ -18,6 +26,17 @@ class CSVImporter:
         self.participants: List[Participant] = self.read_participants(path)
     
     def read_participants(self, path: Path) -> List[Participant]:
+        """Import participants from a CSV file. Guess the 'dialect' used by reading the first 1024 bytes of the file.
+        Allow for arbirtrary columns as long as 'name', 'standort' and 'eingeschrieben' are present.
+
+        :param path: File path to CSV file
+        :type path: Path
+        :raises AssertionError: CSV file does not have column names
+        :raises AssertionError: CSV file doesn't have mandatory field names 'name', 'standort' and 'eingeschrieben'
+        :raises AssertionError: CSV file is empty
+        :return: Imported participants
+        :rtype: List[Participant]
+        """
         list_of_participants: List[Participant] = []
         with open(path, newline="") as csvfile:
             dialect = csv.Sniffer().sniff(csvfile.read(1024))
@@ -46,5 +65,10 @@ class CSVImporter:
         return list_of_participants
     
     def sort_participants(self, by: Union[str, List[str]]) -> None:
+        """Sort participant list in-place
+
+        :param by: Attributes of `Participant` class to use for sorting
+        :type by: Union[str, List[str]]
+        """
         self.participants.sort(key=attrgetter(*by))
 
