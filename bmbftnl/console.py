@@ -46,6 +46,12 @@ def main() -> int:
         help="Anzahl an Leerseiten pro Tag, die hinzugefügt werden",
     )
     arguments.add_argument(
+        "--kleiner-font",
+        required=False,
+        action="store_false",
+        help="Nutze standardmäßig originale Fontgröße (groß) für den Standort; wenn angegeben, nutze kleine Fontgröße. Sinnvoll für lange Standortnamen"
+    )
+    arguments.add_argument(
         "out_dir",
         type=Path,
         help="Pfad zu Verzeichnis, in welchem Dateien abgespeichert werden sollen (aktuelles Verzeichnis mit Punkt angeben)",
@@ -72,6 +78,7 @@ def main() -> int:
         end_date,
         participants,
         cli_args.vorlage,
+        cli_args.kleiner_font,
         cli_args.extra_seiten,
     )
 

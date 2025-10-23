@@ -35,6 +35,7 @@ class PDFExporter:
         end_date: date,
         participants: CSVImporter,
         template: Path,
+        big_font: bool,
         blank_pages: int = 1,
     ):
         """
@@ -52,6 +53,8 @@ class PDFExporter:
         :type participants: CSVImporter
         :param template: Path to PDF template, must have fillable form fields
         :type template: Path
+        :param big_font: Use original or small font for location field
+        :type big_font: bool
         :param blank_pages: Number of blank pages to append to each day, defaults to 1
         :type blank_pages: int, optional
         """
@@ -59,15 +62,17 @@ class PDFExporter:
         self.organization: str = organization
         self.start_date: date = start_date
         self.end_date: date = end_date
-        self.printable_participants: List[Dict] = self.import_participants(participants)
+        self.printable_participants: List[Dict] = self.import_participants(participants, big_font)
         self.template: Path = template
         self.blank_pages: int = blank_pages
     
-    def import_participants(self, participants: CSVImporter) -> List[Dict]:
+    def import_participants(self, participants: CSVImporter, big_font: bool) -> List[Dict]:
         """Convert list of participants to a printable representation suitable to fill in form fields of PDF
 
         :param participants: List of participants
         :type participants: CSVImporter
+        :param big_font: Use original font size, scale down if set to False
+        :type big_font: bool
         :return: List of participants in printable format, i.e. as a dict of form field ids and their content
         :rtype: List[Dict]
         """
@@ -81,7 +86,7 @@ class PDFExporter:
                 form_ids[1]: participant.name,
                 # set font size to 8 for default font because autosizing does not work
                 # longest string without cutoff: Rheinland-Pfälzische Technische Universität Kaiserslautern-Landau
-                form_ids[2]: (participant.location, "", 8),
+                form_ids[2]: participant.location if big_font else (participant.location, "", 8),
                 form_ids[3]: participant.printable_enrollment()
             })
         
