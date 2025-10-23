@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 from datetime import date
 from pathlib import Path
-from bmbftnl.participants import Teilnehmendenliste
+from bmbftnl.participants import PDFExporter, CSVImporter
 
 
 def main() -> int:
@@ -61,12 +61,15 @@ def main() -> int:
     start_date: date = date.fromisoformat(cli_args.beginn)
     end_date: date = date.fromisoformat(cli_args.ende)
 
-    tnl = Teilnehmendenliste(
+    participants: CSVImporter = CSVImporter(cli_args.teilnehmende)
+    participants.sort_participants(by=["location", "name"])
+
+    tnl = PDFExporter(
         cli_args.titel,
         cli_args.organisation,
         start_date,
         end_date,
-        cli_args.teilnehmende,
+        participants,
         cli_args.vorlage,
         cli_args.extra_seiten,
     )

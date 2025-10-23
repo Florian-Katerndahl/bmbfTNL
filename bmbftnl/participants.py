@@ -107,8 +107,8 @@ class PDFExporter:
         :type start_date: date
         :param end_date: End date of event (inclusive)
         :type end_date: date
-        :param participants: Path to CSV file with participants
-        :type participants: Path
+        :param participants: List of participants
+        :type participants: CSVImporter
         :param template: Path to PDF template, must have fillable form fields
         :type template: Path
         :param blank_pages: Number of blank pages to append to each day, defaults to 1
@@ -122,10 +122,7 @@ class PDFExporter:
         self.template: Path = template
         self.blank_pages: int = blank_pages
     
-    def import_participants(self, participant_file: Path) -> List[Dict]:
-        participants: CSVImporter = CSVImporter(participant_file)
-        participants.sort_participants(by=["location", "name"])
-
+    def import_participants(self, participants: CSVImporter) -> List[Dict]:
         printable_participants: List[Dict] = []
 
         for idx, (participant, form_ids) in enumerate(zip(participants.participants, cycle(PDFExporter.pdf_form_mapping))):
