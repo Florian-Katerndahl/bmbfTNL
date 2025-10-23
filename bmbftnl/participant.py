@@ -10,4 +10,4 @@ class Participant:
         :return: Aligned string to correctly fill field
         :rtype: str
         """
-        return "  X" if self.enrolled else "            X"
+        return "X".rjust(3) if self.enrolled else "X".rjust(13)
