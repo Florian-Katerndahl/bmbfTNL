@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "bmbftnl"
-version = "0.1.0"
+version = "0.1.1"
 description = "Automatisches Ausfüllen von Teilnehmendenlisten des BMBF mit Namen, Standort und Studierendenstatus"
 license = "MIT"
 authors = ["Florian Katerndahl <florian@katerndahl.com>"]
