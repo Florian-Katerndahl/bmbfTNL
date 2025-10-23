@@ -14,7 +14,10 @@ pipx install bmbftnl
 
 ## Nutzung
 
-Zum einfachen Erstellen der Teilnehmendenlisten wird das Programm `bmbftnl` auf der Kommandozeile aufgerufen. Die verpflichtenden und optionalen Argumente sind unten aufgeführt. Die Teilnehmendenliste muss wie drei Spalten (name, standort und eingeschrieben) haben -- ein Beispiel findet du weiter unten.
+Zum einfachen Erstellen der Teilnehmendenlisten wird das Programm `bmbftnl` auf der Kommandozeile aufgerufen. Die verpflichtenden und optionalen Argumente sind unten aufgeführt. Die Teilnehmendenliste kann beliebig viele Spalten haben wobei die Spalten `name`, `standort` und `eingeschrieben` präsent sein müssen -- ein Beispiel findest du weiter unten.
+
+> [!IMPORTANT]
+> Es werden 1024 Byte (~Zeichen) eingelesen um das CSV-Format zu bestimmen. Dies mag unter Umständen bei sehr(!) großen Tabellen nicht ausreichend sein um die Kopfzeile einzulsesen.
 
 > [!NOTE]
 > Das Programm wurde mit Vorlagen aus dem Jahr 2018/2019 und 2024/2025 getestet. Einige sehr lange Standortnamen (> 65 Zeichen) können unter Umständen in der Liste abgeschnitten werden.

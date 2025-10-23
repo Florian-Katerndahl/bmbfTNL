@@ -1,4 +1,4 @@
-from csv import DictReader
+import csv
 from datetime import date, timedelta
 from itertools import cycle
 from pathlib import Path
@@ -10,9 +10,9 @@ from pypdf import PdfReader, PdfWriter
 from tqdm import tqdm
 
 def convert_enrollment_to_bool(status: str) -> bool:
-    if status.lower() in ["ja", "yes", "true", "t", "1"]:
+    if status.lower() in ["j", "ja", "y", "yes", "true", "t", "1"]:
         return True
-    if status.lower() in ["nein", "no", "false", "f", "0"]:
+    if status.lower() in ["n", "nein", "no", "false", "f", "0"]:
         return False
     raise ValueError(f"Unknown value {status} for enrollment status")
 
@@ -43,13 +43,22 @@ class CSVImporter:
     
     def read_participants(self, path: Path) -> List[Participant]:
         list_of_participants: List[Participant] = []
-        with open(path, encoding="utf-8") as csvfile:
-            reader = DictReader(csvfile)
+        with open(path, newline="") as csvfile:
+            dialect = csv.Sniffer().sniff(csvfile.read(1024))
+            csvfile.seek(0)
 
-            if reader.fieldnames != ["name", "standort", "eingeschrieben"]:
-                raise AssertionError(
-                    "Column fields are expected to be name, standort and eingeschrieben"
-                )
+            print(f"INFO: Reading file {path} with delimiter '{dialect.delimiter}' and {repr(dialect.lineterminator)} in {csvfile.encoding} encoding")
+
+            reader = csv.DictReader(csvfile, dialect=dialect)
+
+            if not reader.fieldnames:
+                raise AssertionError(f"File {path} does not contain column names")
+            
+            expected_fieldnames: Set = {"name", "standort", "eingeschrieben"}
+            common_fieldnames: Set = set(reader.fieldnames) & expected_fieldnames
+
+            if len(common_fieldnames) != 3:
+                raise AssertionError(f"Missing field names: {expected_fieldnames - common_fieldnames}")
             
             for row in reader:
                 participant: Participant = Participant(row["name"], row["standort"], convert_enrollment_to_bool(row["eingeschrieben"]))
