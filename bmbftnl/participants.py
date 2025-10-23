@@ -3,14 +3,72 @@ from datetime import date, timedelta
 from itertools import cycle
 from pathlib import Path
 from math import ceil
-from typing import List, Dict, Tuple
-from operator import itemgetter
+from typing import List, Dict, Tuple, Union
+from operator import itemgetter, attrgetter
 
 from pypdf import PdfReader, PdfWriter
 from tqdm import tqdm
 
+def convert_enrollment_to_bool(status: str) -> bool:
+    if status.lower() in ["ja", "yes", "true", "t", "1"]:
+        return True
+    if status.lower() in ["nein", "no", "false", "f", "0"]:
+        return False
+    raise ValueError(f"Unknown value {status} for enrollment status")
 
-class Teilnehmendenliste:
+class Participant:
+    """
+    Diese Klasse modelliert eine Teilnehmerin/einen Teilnehmer von der Anmeldeliste
+    """
+    def __init__(self, name: str, location: str, enrolled: bool):
+        self.name: str = name
+        self.location: str = location
+        self.enrolled: bool = enrolled
+    
+    def printable_enrollment(self) -> str:
+        """
+        Convert enrollment status to suitable character representation for form filling
+        :return: Aligned string to correctly fill field
+        :rtype: str
+        """
+        return "  X" if self.enrolled else "            X"
+
+
+class CSVImporter:
+    """
+    Diese Klasse modelliert die Anmeldeliste mit mehreren Teilnehmenden
+    """
+    def __init__(self, path: Path):
+        self.participants: List[Participant] = self.read_participants(path)
+    
+    def read_participants(self, path: Path) -> List[Participant]:
+        list_of_participants: List[Participant] = []
+        with open(path, encoding="utf-8") as csvfile:
+            reader = DictReader(csvfile)
+
+            if reader.fieldnames != ["name", "standort", "eingeschrieben"]:
+                raise AssertionError(
+                    "Column fields are expected to be name, standort and eingeschrieben"
+                )
+            
+            for row in reader:
+                participant: Participant = Participant(row["name"], row["standort"], convert_enrollment_to_bool(row["eingeschrieben"]))
+                list_of_participants.append(participant)
+        
+        if len(list_of_participants) == 0:
+            raise AssertionError(f"No participants specified in {path}")
+        
+        return list_of_participants
+    
+    def sort_participants(self, by: Union[str, List[str]]) -> None:
+        self.participants.sort(key=attrgetter(*by))
+
+
+class PDFExporter:
+    """
+    Diese Klasse modelliert die Teilnehmendenliste, also die fertige Liste für das BMBF/BMFTR, welche von
+    Teilnehmenden unterschrieben werden kann.
+    """
     pdf_form_mapping: List[Tuple[str]] = [
         ("6", "20", "21", "Studierenderja  nein1"),
         ("19", "40", "41", "fill_0"),
@@ -26,65 +84,7 @@ class Teilnehmendenliste:
         ("9", "31", "36", "fill_20"),
         ("8", "32", "37", "fill_22"),
         ("7", "33", "38", "VO in Verbinduragten weiterg"),
-    ]
-
-    @classmethod
-    def enrolled_to_printable(cls, enrolled: str) -> str:
-        """
-        Convert enrollment status to suitable character representation for form filling
-
-        :param enrolled: Enrollment status
-        :type enrolled: str
-        :return: Aligned string to correctly fill field
-        :rtype: str
-        """
-        return "  X" if enrolled.lower() == "ja" else "            X"
-
-    @classmethod
-    def read_participants(cls, participants: Path) -> List[Dict]:
-        """
-        Read participants, order them by location and replace csv
-        field names by form names
-
-        :param participants: File path to CSV file
-        :type participants: Path
-        :raises AssertionError: Field names not "name", "standort" and "eingeschrieben"
-        :raises AssertionError: Empty participant list gien
-        :return: List of participants dictionaries
-        :rtype: List[Dict]
-        """
-        participant_list: List[Dict] = []
-        with open(participants, encoding="utf-8") as csvfile:
-            reader = DictReader(csvfile)
-
-            if reader.fieldnames != ["name", "standort", "eingeschrieben"]:
-                raise AssertionError(
-                    "Column fields are expected to be name, standort and eingeschrieben"
-                )
-
-            participant_list = list(reader)
-
-        # sort participants by location to make finding oneself in list easier
-        participant_list.sort(key=itemgetter("standort", "name"))
-
-        for number, (participant, form_ids) in enumerate(
-            zip(participant_list, cycle(Teilnehmendenliste.pdf_form_mapping))
-        ):
-            participant_list[number][form_ids[0]] = number + 1
-            participant_list[number][form_ids[1]] = participant["name"]
-            # set font size to 8 for default font because autosizing does not work
-            # longest string without cutoff: Rheinland-Pfälzische Technische Universität Kaiserslautern-Landau
-            participant_list[number][form_ids[2]] = (participant["standort"], "", 8)
-            participant_list[number][
-                form_ids[3]
-            ] = Teilnehmendenliste.enrolled_to_printable(participant["eingeschrieben"])
-            del participant["standort"]
-            del participant["name"]
-
-        if len(participant_list) == 0:
-            raise AssertionError("No participants specified")
-
-        return participant_list
+    ]    
 
     def __init__(
         self,
@@ -92,7 +92,7 @@ class Teilnehmendenliste:
         organization: str,
         start_date: date,
         end_date: date,
-        participants: Path,
+        participants: CSVImporter,
         template: Path,
         blank_pages: int = 1,
     ):
@@ -118,13 +118,31 @@ class Teilnehmendenliste:
         self.organization: str = organization
         self.start_date: date = start_date
         self.end_date: date = end_date
-        self.participants: List[Dict] = Teilnehmendenliste.read_participants(
-            participants
-        )
+        self.printable_participants: List[Dict] = self.import_participants(participants)
         self.template: Path = template
         self.blank_pages: int = blank_pages
+    
+    def import_participants(self, participant_file: Path) -> List[Dict]:
+        participants: CSVImporter = CSVImporter(participant_file)
+        participants.sort_participants(by=["location", "name"])
 
-    def form_header_fields(self, page_number: int, event_date: date) -> Dict[str, str]:
+        printable_participants: List[Dict] = []
+
+        for idx, (participant, form_ids) in enumerate(zip(participants.participants, cycle(PDFExporter.pdf_form_mapping))):
+            assert isinstance(participant, Participant), "Participant list not consisting of objects of type Participant"
+
+            printable_participants.append({
+                form_ids[0]: idx + 1,
+                form_ids[1]: participant.name,
+                # set font size to 8 for default font because autosizing does not work
+                # longest string without cutoff: Rheinland-Pfälzische Technische Universität Kaiserslautern-Landau
+                form_ids[2]: (participant.location, "", 8),
+                form_ids[3]: participant.printable_enrollment()
+            })
+        
+        return printable_participants
+
+    def generate_page_header(self, page_number: int, event_date: date) -> Dict[str, str]:
         """
         Generate general header information placed on every page
 
@@ -156,7 +174,7 @@ class Teilnehmendenliste:
         """
         event_duration: timedelta = self.end_date - self.start_date
         num_pages_per_day: int = ceil(
-            len(self.participants) / len(Teilnehmendenliste.pdf_form_mapping)
+            len(self.printable_participants) / len(PDFExporter.pdf_form_mapping)
         )
 
         pdf_reader: PdfReader = PdfReader(self.template)
@@ -169,11 +187,11 @@ class Teilnehmendenliste:
             event_date: date = self.start_date + timedelta(days=event_day)
 
             for page in range(num_pages_per_day):
-                chunk_start: int = page * len(Teilnehmendenliste.pdf_form_mapping)
-                chunk_end: int = chunk_start + len(Teilnehmendenliste.pdf_form_mapping)
+                chunk_start: int = page * len(PDFExporter.pdf_form_mapping)
+                chunk_end: int = chunk_start + len(PDFExporter.pdf_form_mapping)
                 chunk_of_participants: List[Dict] = {
                     k: v
-                    for participant in self.participants[chunk_start:chunk_end]
+                    for participant in self.printable_participants[chunk_start:chunk_end]
                     for k, v in participant.items()
                 }
 
@@ -181,7 +199,7 @@ class Teilnehmendenliste:
 
                 pdf_writer.update_page_form_field_values(
                     pdf_writer.pages[page],
-                    self.form_header_fields(page + 1, event_date),
+                    self.generate_page_header(page + 1, event_date),
                     auto_regenerate=False,
                 )
 
@@ -196,7 +214,7 @@ class Teilnehmendenliste:
 
                 pdf_writer.update_page_form_field_values(
                     pdf_writer.pages[num_pages_per_day + blank],
-                    self.form_header_fields(num_pages_per_day + blank + 1, event_date),
+                    self.generate_page_header(num_pages_per_day + blank + 1, event_date),
                     auto_regenerate=False,
                 )
 
@@ -213,3 +231,4 @@ class Teilnehmendenliste:
 
             pdf_writer.close()
         pdf_reader.close()
+
