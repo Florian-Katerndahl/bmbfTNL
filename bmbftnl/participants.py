@@ -4,7 +4,7 @@ from itertools import cycle
 from pathlib import Path
 from math import ceil
 from typing import List, Dict, Tuple, Union
-from operator import itemgetter, attrgetter
+from operator import attrgetter
 
 from pypdf import PdfReader, PdfWriter
 from tqdm import tqdm
