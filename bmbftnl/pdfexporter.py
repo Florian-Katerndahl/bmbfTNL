@@ -1,83 +1,15 @@
-import csv
 from datetime import date, timedelta
 from itertools import cycle
-from pathlib import Path
 from math import ceil
-from typing import List, Dict, Tuple, Union
-from operator import attrgetter
+from pathlib import Path
+from typing import List, Tuple, Dict
 
+from bmbftnl.csvimporter import CSVImporter
+from bmbftnl.participant import Participant
 from pypdf import PdfReader, PdfWriter
 from tqdm import tqdm
 
-def convert_enrollment_to_bool(status: str) -> bool:
-    if status.lower() in ["j", "ja", "y", "yes", "true", "t", "1"]:
-        return True
-    if status.lower() in ["n", "nein", "no", "false", "f", "0"]:
-        return False
-    raise ValueError(f"Unknown value {status} for enrollment status")
-
-class Participant:
-    """
-    Diese Klasse modelliert eine Teilnehmerin/einen Teilnehmer von der Anmeldeliste
-    """
-    def __init__(self, name: str, location: str, enrolled: bool):
-        self.name: str = name
-        self.location: str = location
-        self.enrolled: bool = enrolled
-    
-    def printable_enrollment(self) -> str:
-        """
-        Convert enrollment status to suitable character representation for form filling
-        :return: Aligned string to correctly fill field
-        :rtype: str
-        """
-        return "  X" if self.enrolled else "            X"
-
-
-class CSVImporter:
-    """
-    Diese Klasse modelliert die Anmeldeliste mit mehreren Teilnehmenden
-    """
-    def __init__(self, path: Path):
-        self.participants: List[Participant] = self.read_participants(path)
-    
-    def read_participants(self, path: Path) -> List[Participant]:
-        list_of_participants: List[Participant] = []
-        with open(path, newline="") as csvfile:
-            dialect = csv.Sniffer().sniff(csvfile.read(1024))
-            csvfile.seek(0)
-
-            print(f"INFO: Reading file {path} with delimiter '{dialect.delimiter}' and {repr(dialect.lineterminator)} in {csvfile.encoding} encoding")
-
-            reader = csv.DictReader(csvfile, dialect=dialect)
-
-            if not reader.fieldnames:
-                raise AssertionError(f"File {path} does not contain column names")
-            
-            expected_fieldnames: Set = {"name", "standort", "eingeschrieben"}
-            common_fieldnames: Set = set(reader.fieldnames) & expected_fieldnames
-
-            if len(common_fieldnames) != 3:
-                raise AssertionError(f"Missing field names: {expected_fieldnames - common_fieldnames}")
-            
-            for row in reader:
-                participant: Participant = Participant(row["name"], row["standort"], convert_enrollment_to_bool(row["eingeschrieben"]))
-                list_of_participants.append(participant)
-        
-        if len(list_of_participants) == 0:
-            raise AssertionError(f"No participants specified in {path}")
-        
-        return list_of_participants
-    
-    def sort_participants(self, by: Union[str, List[str]]) -> None:
-        self.participants.sort(key=attrgetter(*by))
-
-
 class PDFExporter:
-    """
-    Diese Klasse modelliert die Teilnehmendenliste, also die fertige Liste für das BMBF/BMFTR, welche von
-    Teilnehmenden unterschrieben werden kann.
-    """
     pdf_form_mapping: List[Tuple[str]] = [
         ("6", "20", "21", "Studierenderja  nein1"),
         ("19", "40", "41", "fill_0"),
@@ -172,8 +104,7 @@ class PDFExporter:
     def generate_bmbf_list(self, output_directory: Path) -> None:
         """
         Generate BMBF attendence lists for every day of an event as seperate output files.
-        A file is genereated for every day, even if the specific day is not funded; there's
-        currently no mechanism to skip specific dates.
+        A file is genereated for every day, there's currently no mechanism to skip specific dates.
 
         :param output_directory: Output directory to store all output files
         :type output_directory: Path
@@ -237,4 +168,3 @@ class PDFExporter:
 
             pdf_writer.close()
         pdf_reader.close()
-

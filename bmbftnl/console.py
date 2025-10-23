@@ -1,7 +1,8 @@
 from argparse import ArgumentParser
 from datetime import date
 from pathlib import Path
-from bmbftnl.participants import PDFExporter, CSVImporter
+from bmbftnl.pdfexporter import PDFExporter
+from bmbftnl.csvimporter import CSVImporter
 
 
 def main() -> int:
