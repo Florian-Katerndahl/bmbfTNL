@@ -158,9 +158,9 @@ class PDFExporter:
                 pdf_writer.reset_translation(pdf_reader)
 
             file_name: str = (
-                self.title.replace(" ", "")
-                + "-"
-                + event_date.strftime(r"%d_%m_%y")
+                self.title.replace(" ", "-")
+                + "_"
+                + event_date.strftime(r"%Y%m%d")
                 + ".pdf"
             )
             with open(output_directory / file_name, mode="wb") as out_stream:
