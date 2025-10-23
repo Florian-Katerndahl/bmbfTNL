@@ -4,6 +4,7 @@ from typing import Union, List
 from operator import attrgetter
 
 from bmbftnl.participant import Participant
+from charset_normalizer import from_path
 
 def convert_enrollment_to_bool(status: str) -> bool:
     """Convert string representation of enrollment status to boolean
@@ -38,11 +39,16 @@ class CSVImporter:
         :rtype: List[Participant]
         """
         list_of_participants: List[Participant] = []
-        with open(path, newline="") as csvfile:
+        
+        # determine encoding, because windows sucks and adds a BOM
+        charset_match = from_path(path)
+        charset_result = charset_match.best()
+
+        with open(path, newline="", encoding=charset_result.encoding + ("-sig" if charset_result.bom else "")) as csvfile:
             dialect = csv.Sniffer().sniff(csvfile.read(1024))
             csvfile.seek(0)
 
-            print(f"INFO: Reading file {path} with delimiter '{dialect.delimiter}' and {repr(dialect.lineterminator)} in {csvfile.encoding} encoding")
+            print(f"INFO: Reading file {path} with delimiter '{dialect.delimiter}' and line ending {repr(dialect.lineterminator)} in {csvfile.encoding} encoding")
 
             reader = csv.DictReader(csvfile, dialect=dialect)
 
