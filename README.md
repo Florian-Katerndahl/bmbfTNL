@@ -20,10 +20,10 @@ Zum einfachen Erstellen der Teilnehmendenlisten wird das Programm `bmbftnl` auf 
 > Es werden 1024 Byte (~Zeichen) eingelesen um das CSV-Format zu bestimmen. Dies mag unter Umständen bei sehr(!) großen Tabellen nicht ausreichend sein um die Kopfzeile einzulsesen.
 
 > [!NOTE]
-> Das Programm wurde mit Vorlagen aus dem Jahr 2018/2019 und 2024/2025 getestet. Einige sehr lange Standortnamen (> 65 Zeichen) können unter Umständen in der Liste abgeschnitten werden.
+> Das Programm wurde mit Vorlagen aus dem Jahr 2018/2019 und 2024/2025 getestet. Einige sehr lange Standortnamen (> 65 Zeichen) können unter Umständen in der Liste abgeschnitten werden, hier kann es sich lohnen mit der Option `--kleiner-font` zu arbeiten.
 
 ```bash
-usage: bmbftnl [-h] --titel TITEL --organisation ORGANISATION --beginn BEGINN --ende ENDE --teilnehmende TEILNEHMENDE --vorlage VORLAGE [--extra-seiten EXTRA_SEITEN] out_dir
+usage: bmbftnl [-h] --titel TITEL --organisation ORGANISATION --beginn BEGINN --ende ENDE --teilnehmende TEILNEHMENDE --vorlage VORLAGE [--extra-seiten EXTRA_SEITEN] [--kleiner-font] out_dir
 
 Automatisches Ausfüllen von Teilnehmendenlisten des BMBF mit Namen, Standort und Studierendenstatus
 
@@ -38,10 +38,11 @@ options:
   --beginn BEGINN       Beginn der Veranstaltung im ISO-Format (yyyy-mm-dd)
   --ende ENDE           Ende der Veranstaltung im ISO-Format (yyyy-mm-dd)
   --teilnehmende TEILNEHMENDE
-                        CSV-Tabelle mit den Spalten name, standort und immatrikuliert. Letzteres durch ja/nein angegeben
+                        CSV-Tabelle mit den Spalten name, standort und eingeschrieben. Letzteres durch ja/nein angegeben
   --vorlage VORLAGE     Dateipfad zu der vom BMBF erstellten Vorlage. Zuletzt getestest mit Vorlage 2024/2025
   --extra-seiten EXTRA_SEITEN
                         Anzahl an Leerseiten pro Tag, die hinzugefügt werden
+  --kleiner-font        Nutze standardmäßig originale Fontgröße (groß) für den Standort; wenn angegeben, nutze kleine Fontgröße. Sinnvoll für lange Standortnamen
 ```
 
 ```csv
